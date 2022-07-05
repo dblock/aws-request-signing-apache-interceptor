@@ -63,10 +63,10 @@ public class AmazonOpenSearchServiceSample extends Sample {
     public static void main(String[] args) throws IOException {
         AmazonOpenSearchServiceSample sample = new AmazonOpenSearchServiceSample();
         sample.makeRequest();
-        sample.indexDocument();
-        sample.indexDocumentWithCompressionEnabled();
+        // sample.indexDocument();
+        // sample.indexDocumentWithCompressionEnabled();
         // https://github.com/acm19/aws-request-signing-apache-interceptor/issues/20
-        // sample.indexDocumentWithChunkedTransferEncoding();
+        sample.indexDocumentWithChunkedTransferEncoding();
         // sample.indexDocumentWithChunkedTransferEncodingCompressionEnabled();
     }
 

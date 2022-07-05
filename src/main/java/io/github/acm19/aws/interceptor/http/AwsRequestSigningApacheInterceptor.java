@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
@@ -25,6 +26,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
+
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.signer.AwsSignerExecutionAttribute;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
@@ -108,16 +110,21 @@ public class AwsRequestSigningApacheInterceptor implements HttpRequestIntercepto
                 .method(SdkHttpMethod.fromValue(request.getRequestLine().getMethod()))
                 .uri(buildUri(context, uriBuilder));
 
+        List<Header> headers = new ArrayList<Header>();
+        Collections.addAll(headers, request.getAllHeaders());
+
         if (request instanceof HttpEntityEnclosingRequest) {
             HttpEntityEnclosingRequest httpEntityEnclosingRequest = (HttpEntityEnclosingRequest) request;
             if (httpEntityEnclosingRequest.getEntity() != null) {
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 httpEntityEnclosingRequest.getEntity().writeTo(outputStream);
-                requestBuilder.contentStreamProvider(() -> new ByteArrayInputStream(outputStream.toByteArray()));
+                byte[] data = outputStream.toByteArray();
+                requestBuilder.contentStreamProvider(() -> new ByteArrayInputStream(data));
+                headers.add(new BasicHeader("x-amz-decoded-content-length", Long.toString(data.length)));
             }
         }
         requestBuilder.rawQueryParameters(nvpToMapParams(uriBuilder.getQueryParams()));
-        requestBuilder.headers(headerArrayToMap(request.getAllHeaders()));
+        requestBuilder.headers(headerArrayToMap(headers));
 
         ExecutionAttributes attributes = new ExecutionAttributes();
         attributes.putAttribute(AwsSignerExecutionAttribute.AWS_CREDENTIALS,
@@ -177,7 +184,7 @@ public class AwsRequestSigningApacheInterceptor implements HttpRequestIntercepto
      * @param headers modelled Header objects
      * @return a Map of header entries
      */
-    private static Map<String, List<String>> headerArrayToMap(final Header[] headers) {
+    private static Map<String, List<String>> headerArrayToMap(final List<Header> headers) {
         Map<String, List<String>> headersMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Header header : headers) {
             if (!skipHeader(header)) {
