@@ -2,6 +2,7 @@ package io.github.acm19.aws.interceptor.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.http.HttpHeaders;
@@ -13,7 +14,10 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
+import software.amazon.awssdk.http.SdkHttpFullRequest;
+import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.utils.StringInputStream;
 
 /**
  * <p>
@@ -64,25 +68,32 @@ public class AmazonOpenSearchServiceSample extends Sample {
         AmazonOpenSearchServiceSample sample = new AmazonOpenSearchServiceSample();
         sample.makeRequest();
         sample.indexDocument();
-        sample.indexDocumentWithCompressionEnabled();
+        // sample.indexDocumentWithCompressionEnabled();
         // https://github.com/acm19/aws-request-signing-apache-interceptor/issues/20
         // sample.indexDocumentWithChunkedTransferEncoding();
         // sample.indexDocumentWithChunkedTransferEncodingCompressionEnabled();
     }
 
     private void makeRequest() throws IOException {
-        HttpGet httpGet = new HttpGet(ENDPOINT);
+        SdkHttpFullRequest httpGet = SdkHttpFullRequest.builder()
+            .method(SdkHttpMethod.GET)
+            .uri(URI.create(ENDPOINT))
+            .build();
         logRequest("es", REGION, httpGet);
     }
 
     private void indexDocument() throws IOException {
         String payload = "{\"test\": \"val\"}";
-        HttpPost httpPost = new HttpPost(ENDPOINT + "/index_name/type_name/document_id");
-        httpPost.setEntity(new StringEntity(payload));
-        httpPost.addHeader("Content-Type", "application/json");
+        SdkHttpFullRequest httpPost = SdkHttpFullRequest.builder()
+            .method(SdkHttpMethod.POST)
+            .uri(URI.create(ENDPOINT))
+            .appendHeader("Content-Type", "application/json")
+            .contentStreamProvider(() -> new StringInputStream(payload))
+            .build();
         logRequest("es", REGION, httpPost);
     }
 
+    /*
     private void indexDocumentWithChunkedTransferEncoding() throws IOException {
         String payload = "{\"test\": \"val\"}";
         HttpPost httpPost = new HttpPost(ENDPOINT + "/index_name/type_name/document_id");
@@ -119,4 +130,5 @@ public class AmazonOpenSearchServiceSample extends Sample {
         httpPost.setEntity(entity);
         logRequest("es", REGION, httpPost);
     }
+    */
 }
