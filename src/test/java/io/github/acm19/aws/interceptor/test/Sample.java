@@ -14,6 +14,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -24,6 +26,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HttpContext;
 
 import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -86,8 +89,19 @@ class Sample {
 
         HttpRequestInterceptor interceptor = new AwsRequestSigningApacheInterceptor(serviceName, signer,
                 credentialsProvider, region);
+
         return HttpClients.custom()
                 .addInterceptorLast(interceptor)
-                .build();
+                .addInterceptorLast(new HttpRequestInterceptor() {
+                    private int exceptionCount = 0;
+
+                    @Override
+                    public void process(HttpRequest request, HttpContext context)
+                            throws HttpException, IOException {
+                                if (exceptionCount++ <= 0) {
+                                    throw new IOException("Planned");
+                                }
+                    }
+                }).build();
     }
 }
