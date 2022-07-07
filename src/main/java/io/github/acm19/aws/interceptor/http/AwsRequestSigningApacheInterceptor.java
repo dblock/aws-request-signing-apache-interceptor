@@ -31,6 +31,7 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -146,7 +147,8 @@ public class AwsRequestSigningApacheInterceptor implements HttpRequestIntercepto
                 basicHttpEntity.setContent(signedRequest.contentStreamProvider()
                         .orElseThrow(() -> new IllegalStateException("There must be content"))
                         .newStream());
-                httpEntityEnclosingRequest.setEntity(basicHttpEntity);
+                // wrap into a repeatable entity, see https://github.com/acm19/aws-request-signing-apache-interceptor/issues/38
+                httpEntityEnclosingRequest.setEntity(new BufferedHttpEntity(basicHttpEntity));
             }
         }
     }
