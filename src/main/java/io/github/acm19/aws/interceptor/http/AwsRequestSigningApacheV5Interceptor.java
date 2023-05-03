@@ -18,6 +18,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
@@ -78,6 +80,13 @@ public final class AwsRequestSigningApacheV5Interceptor implements HttpRequestIn
             if (classicHttpRequest.getEntity() != null) {
                 final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 classicHttpRequest.getEntity().writeTo(outputStream);
+                requestBuilder.contentStreamProvider(() -> new ByteArrayInputStream(outputStream.toByteArray()));
+            }
+        } else if (request instanceof SimpleHttpRequest) {
+            SimpleHttpRequest simpleHttpRequest = (SimpleHttpRequest) request;
+            if (simpleHttpRequest.getBody() != null) {
+                final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                outputStream.write(simpleHttpRequest.getBodyBytes());
                 requestBuilder.contentStreamProvider(() -> new ByteArrayInputStream(outputStream.toByteArray()));
             }
         }
